@@ -7,6 +7,10 @@ namespace CY.Rendering
 {
     public partial class CameraRender
     {
+        /// <summary>
+        /// unity SRP管线中有一个默认标签叫做SRPDefaultUnlit，如果不在Shader的Tags显示指定LightMode，
+        /// 就会默认使用"LightMode"="SRPDefaultUnlit"，但要想该标签生效，还是需要在DrawSetting中设置tagId
+        /// </summary>
         static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"),
             litShaderTagId = new ShaderTagId("CustomLit");
         Lighting lighting = new Lighting();
@@ -36,7 +40,7 @@ namespace CY.Rendering
                 return;
             }
             Setup();
-            lighting.Setup(context);
+            lighting.Setup(context,ref cullingResults);
             DrawVisibleGeometry();
             DrawUnsupportedShaders();
             DrawGizmos();

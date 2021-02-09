@@ -13,6 +13,7 @@
                 "LightMode"="CustomLit"
             }
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
             #include "LitPass.hlsl"

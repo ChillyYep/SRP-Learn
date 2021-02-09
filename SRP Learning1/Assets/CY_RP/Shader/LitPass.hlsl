@@ -58,6 +58,6 @@ float4 LitPassFragment(Varyings input):SV_TARGET
     surface.normal=normalize(input.normalWS);
     surface.color=base.rgb;
     surface.alpha=base.a;
-	return float4(GetLighting(surface), surface.alpha);
+	return float4(GetMainDiffuse(surface), surface.alpha);
 }
 #endif

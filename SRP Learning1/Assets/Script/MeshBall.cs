@@ -19,17 +19,28 @@ public class MeshBall : MonoBehaviour
     Vector4[] baseColors = new Vector4[ARRAY_LENGTH];
     float[] cutoffs = new float[ARRAY_LENGTH];
     MaterialPropertyBlock block;
+    Vector3 cacheVec3;
     private void Awake()
     {
+        cacheVec3 = transform.position;
         for (int i = 0; i < ARRAY_LENGTH; ++i)
         {
-            matrices[i] = Matrix4x4.TRS(Random.insideUnitSphere * 10f, Quaternion.identity, Vector3.one);
+            matrices[i] = Matrix4x4.TRS(Random.insideUnitSphere * 10f + transform.position, Quaternion.identity, Vector3.one);
             baseColors[i] = new Vector4(Random.value, Random.value, Random.value, 1f);
         }
     }
 
     private void Update()
     {
+        if (cacheVec3 != transform.position)
+        {
+            for (int i = 0; i < ARRAY_LENGTH; ++i)
+            {
+
+                matrices[i] = matrices[i]* Matrix4x4.Translate(transform.position - cacheVec3);
+            }
+            cacheVec3 = transform.position;
+        }
         if (block == null)
         {
             block = new MaterialPropertyBlock();

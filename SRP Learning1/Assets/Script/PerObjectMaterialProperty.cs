@@ -6,7 +6,6 @@ using UnityEngine;
 public class PerObjectMaterialProperty : MonoBehaviour
 {
     static int baseColorId = Shader.PropertyToID("_BaseColor");
-    static int cutoffId = Shader.PropertyToID("_Cutoff");
     static MaterialPropertyBlock block;
     [SerializeField]
     Color baseColor = Color.white;

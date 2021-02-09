@@ -12,6 +12,7 @@ namespace CY.Rendering
         {
             rpAsset = asset as CYRenderPipelineAsset;
             GraphicsSettings.useScriptableRenderPipelineBatching = rpAsset.SRPBatcherEnabled;
+            GraphicsSettings.lightsUseLinearIntensity = true;
         }
         protected override void Render(ScriptableRenderContext context, Camera[] cameras)
         {
