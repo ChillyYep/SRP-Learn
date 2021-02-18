@@ -26,33 +26,33 @@ namespace CY.Rendering
             {
                 errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
             }
-            var drawingSettings = new DrawingSettings(legacyShaderTagIds[0], new SortingSettings(camera)) { overrideMaterial = errorMaterial };
+            var drawingSettings = new DrawingSettings(legacyShaderTagIds[0], new SortingSettings(Params.camera)) { overrideMaterial = errorMaterial };
             for (int i = 0; i < legacyShaderTagIds.Length; ++i)
             {
                 drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
             }
             var filteringSettings = FilteringSettings.defaultValue;
-            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+            GlobalUniqueParamsForRP.context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
         }
         partial void PrepareBuffer()
         {
             Profiler.BeginSample("Editor Only");
-            cmdBuffer.name = SampleName = camera.name;
+            cmdBuffer.name = SampleName = Params.camera.name;
             Profiler.EndSample();
         }
         partial void PrepareForSceneWindow()
         {
-            if (camera.cameraType == CameraType.SceneView)
+            if (Params.camera.cameraType == CameraType.SceneView)
             {
-                ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+                ScriptableRenderContext.EmitWorldGeometryForSceneView(Params.camera);
             }
         }
         partial void DrawGizmos()
         {
             if (Handles.ShouldRenderGizmos())
             {
-                context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
-                context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
+                GlobalUniqueParamsForRP.context.DrawGizmos(Params.camera, GizmoSubset.PreImageEffects);
+                GlobalUniqueParamsForRP.context.DrawGizmos(Params.camera, GizmoSubset.PostImageEffects);
             }
         }
 #else

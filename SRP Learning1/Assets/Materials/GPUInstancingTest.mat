@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: GPUInstancingTest
   m_Shader: {fileID: 4800000, guid: db512aaaf3e390b4aa82ef96414ca4c2, type: 3}
-  m_ShaderKeywords: 
+  m_ShaderKeywords: _Clipping _Cutoff
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0

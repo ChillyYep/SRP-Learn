@@ -15,3 +15,13 @@ MonoBehaviour:
   SRPBatcherEnabled: 0
   SRPDynamicBatching: 0
   GPUInstanceing: 1
+  shadowSettings:
+    directional:
+      atlasSize: 512
+      cascadeCount: 4
+      cascadeRatio1: 0.1
+      cascadeRatio2: 0.25
+      cascadeRatio3: 0.5
+      cascadeFade: 0.578
+    maxDistance: 20
+    distanceFade: 0.486

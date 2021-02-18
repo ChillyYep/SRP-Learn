@@ -5,6 +5,20 @@ using UnityEngine.Rendering;
 
 namespace CY.Rendering
 {
+    public sealed class CameraRenderParams
+    {
+        public readonly Camera camera;
+        public readonly bool useDynamicBatching;
+        public readonly bool useGPUInstancing;
+        public readonly ShadowSettings shadowSettings;
+        public CameraRenderParams(Camera camera, bool useDynamicBatching, bool useGPUInstancing, ShadowSettings shadowSettings)
+        {
+            this.camera = camera;
+            this.useDynamicBatching = useDynamicBatching;
+            this.useGPUInstancing = useGPUInstancing;
+            this.shadowSettings = shadowSettings;
+        }
+    }
     public partial class CameraRender
     {
         /// <summary>
@@ -12,79 +26,82 @@ namespace CY.Rendering
         /// 就会默认使用"LightMode"="SRPDefaultUnlit"，但要想该标签生效，还是需要在DrawSetting中设置tagId
         /// </summary>
         static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"),
-            litShaderTagId = new ShaderTagId("CustomLit");
+            litShaderTagId = new ShaderTagId("CustomLit"),
+            shadowCasterTagId = new ShaderTagId("ShadowCaster");
         Lighting lighting = new Lighting();
-        ScriptableRenderContext context;
-        Camera camera;
         const string bufferName = "Render Camera";
         CommandBuffer cmdBuffer = new CommandBuffer()
         {
             name = bufferName
         };
         CullingResults cullingResults;
-        bool useDynamicBatching = false;
-        bool useGPUInstancing = false;
-        public void SetDrawField(bool useDynamicBatching, bool useGPUInstancing)
+        CameraRenderParams Params;
+        /// <summary>
+        /// 渲染流程，创建、资源回收/释放都在这一个流程里
+        /// </summary>
+        /// <param name="param"></param>
+        public void Render(CameraRenderParams param)
         {
-            this.useDynamicBatching = useDynamicBatching;
-            this.useGPUInstancing = useGPUInstancing;
-        }
-        public void Render(ScriptableRenderContext context, Camera camera)
-        {
-            this.context = context;
-            this.camera = camera;
+            Params = param;
             PrepareBuffer();
             PrepareForSceneWindow();
             if (!Cull())
             {
                 return;
             }
+            cmdBuffer.BeginSample(SampleName);
+            ExcuteBuffer();
+            lighting.Setup(new LightingParams(cullingResults, Params.shadowSettings));
+            cmdBuffer.EndSample(SampleName);
             Setup();
-            lighting.Setup(context,ref cullingResults);
             DrawVisibleGeometry();
             DrawUnsupportedShaders();
             DrawGizmos();
+            lighting.Cleanup();
             Submit();
         }
         void Setup()
         {
-            CameraClearFlags flags = camera.clearFlags;
-            cmdBuffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
+            CameraClearFlags flags = Params.camera.clearFlags;
+            cmdBuffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? Params.camera.backgroundColor.linear : Color.clear);
             //将相机的属性关联进来，包括VP（view-projection）矩阵
-            context.SetupCameraProperties(camera);
+            GlobalUniqueParamsForRP.context.SetupCameraProperties(Params.camera);
             cmdBuffer.BeginSample(SampleName);
             ExcuteBuffer();
         }
         bool Cull()
         {
-            if (camera.TryGetCullingParameters(out ScriptableCullingParameters p))
+            if (Params.camera.TryGetCullingParameters(out ScriptableCullingParameters p))
             {
-                cullingResults = context.Cull(ref p);
+                //shadowDistance会影响_CascadeCullingSpheres
+                p.shadowDistance = Mathf.Min(Params.shadowSettings.maxDistance, Params.camera.farClipPlane);
+                cullingResults = GlobalUniqueParamsForRP.context.Cull(ref p);
                 return true;
             }
             return false;
         }
         void DrawVisibleGeometry()
         {
-            var sortingSettings = new SortingSettings(camera)
+            var sortingSettings = new SortingSettings(Params.camera)
             {
                 criteria = SortingCriteria.CommonOpaque
             };
             var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings)
             {
-                enableDynamicBatching = useDynamicBatching,
-                enableInstancing = useGPUInstancing
+                enableDynamicBatching = Params.useDynamicBatching,
+                enableInstancing = Params.useGPUInstancing
             };
             //增加shader标签
             drawingSettings.SetShaderPassName(1, litShaderTagId);
+            //drawingSettings.SetShaderPassName(2, shadowCasterTagId);
             var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
-            context.DrawRenderers(cullingResults, ref drawingSettings, ref filterSettings);
-            //绘制天空盒，由Camera的ClearFlag决定是否渲染天空盒
-            context.DrawSkybox(camera);
+            GlobalUniqueParamsForRP.context.DrawRenderers(cullingResults, ref drawingSettings, ref filterSettings);
+            //绘制天空盒，由Camera的ClearFlag决定是否渲染天空盒,在不透明队列后面渲染，避免天空盒overdraw
+            GlobalUniqueParamsForRP.context.DrawSkybox(Params.camera);
             sortingSettings.criteria = SortingCriteria.CommonTransparent;
             drawingSettings.sortingSettings = sortingSettings;
             filterSettings.renderQueueRange = RenderQueueRange.transparent;
-            context.DrawRenderers(cullingResults, ref drawingSettings, ref filterSettings);
+            GlobalUniqueParamsForRP.context.DrawRenderers(cullingResults, ref drawingSettings, ref filterSettings);
         }
         partial void DrawUnsupportedShaders();
         partial void PrepareBuffer();
@@ -92,14 +109,15 @@ namespace CY.Rendering
         partial void PrepareForSceneWindow();
         void ExcuteBuffer()
         {
-            context.ExecuteCommandBuffer(cmdBuffer);
+            GlobalUniqueParamsForRP.context.ExecuteCommandBuffer(cmdBuffer);
             cmdBuffer.Clear();
         }
         void Submit()
         {
             cmdBuffer.EndSample(SampleName);
             ExcuteBuffer();
-            context.Submit();
+            //Submit提交给GPU执行
+            GlobalUniqueParamsForRP.context.Submit();
         }
     }
 }

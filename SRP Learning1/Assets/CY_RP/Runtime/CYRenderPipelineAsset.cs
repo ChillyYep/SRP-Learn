@@ -11,6 +11,7 @@ namespace CY.Rendering
         public bool SRPBatcherEnabled = false;
         public bool SRPDynamicBatching = false;
         public bool GPUInstanceing = true;
+        public ShadowSettings shadowSettings = default;
         protected override RenderPipeline CreatePipeline()
         {
             return new CYRenderPipeline(this);
