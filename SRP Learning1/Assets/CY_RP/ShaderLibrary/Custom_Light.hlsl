@@ -32,6 +32,7 @@ Light GetDirectionalLight (int index,Surface surfaceWS,ShadowData shadowData) {
 	return light;
 }
 float3 GetSaturateIncomingLightColor (Surface surface, Light light) {
+	// return light.attenuation.xxx;
 	return saturate(dot(surface.normal, light.direction)*light.attenuation) * light.color;
 }
 float Square (float v) {

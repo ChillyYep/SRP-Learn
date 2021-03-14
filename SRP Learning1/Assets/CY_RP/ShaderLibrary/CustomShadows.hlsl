@@ -34,7 +34,7 @@ ShadowData GetShadowData(Surface surfaceWS)
 	ShadowData data;
 	data.strength=FadedShadowStrength(surfaceWS.depth,_ShadowDistanceFade.x,_ShadowDistanceFade.y);//原始的强度由Light的Shadow中的strength控制，现在加上深度的影响
 	int i;
-	[unroll(4)]
+	// [unroll(4)]
 	for (i = 0; i < _CascadeCount; i++) {
 		float4 sphere = _CascadeCullingSpheres[i];
 		float distanceSqr = DistanceSquared(surfaceWS.position, sphere.xyz);//shpere.xyz球中心坐标，sphere.w为半径的平方
@@ -46,9 +46,9 @@ ShadowData GetShadowData(Surface surfaceWS)
 			}
 			break;
 		}
-		if(i==_CascadeCount){
-			data.strength=0.0;//只是优化
-		}
+	}
+	if (i == _CascadeCount) {
+		data.strength = 0.0;
 	}
 	data.cascadeIndex = i;
 	return data;
@@ -66,7 +66,7 @@ float GetDirectionalShadowAttenuation (DirectionalShadowData data, Surface surfa
 		_DirectionalShadowMatrices[data.tileIndex],
 		float4(surfaceWS.position, 1.0)
 	);
-	positionSTS.xyz/=positionSTS.w;
+	// positionSTS.xyz/=positionSTS.w;
 	float shadow = SampleDirectionalShadowAtlas(positionSTS.xyz);
 	return lerp(1.0, shadow, data.strength);//stength越小，阴影越暗
 }

@@ -26,8 +26,7 @@ namespace CY.Rendering
         /// 就会默认使用"LightMode"="SRPDefaultUnlit"，但要想该标签生效，还是需要在DrawSetting中设置tagId
         /// </summary>
         static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"),
-            litShaderTagId = new ShaderTagId("CustomLit"),
-            shadowCasterTagId = new ShaderTagId("ShadowCaster");
+            litShaderTagId = new ShaderTagId("CustomLit");
         Lighting lighting = new Lighting();
         const string bufferName = "Render Camera";
         CommandBuffer cmdBuffer = new CommandBuffer()
@@ -93,7 +92,6 @@ namespace CY.Rendering
             };
             //增加shader标签
             drawingSettings.SetShaderPassName(1, litShaderTagId);
-            //drawingSettings.SetShaderPassName(2, shadowCasterTagId);
             var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
             GlobalUniqueParamsForRP.context.DrawRenderers(cullingResults, ref drawingSettings, ref filterSettings);
             //绘制天空盒，由Camera的ClearFlag决定是否渲染天空盒,在不透明队列后面渲染，避免天空盒overdraw

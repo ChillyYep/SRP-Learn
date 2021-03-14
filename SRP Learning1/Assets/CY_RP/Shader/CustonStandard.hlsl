@@ -41,7 +41,7 @@ Varyings LitPassVertex(Attributes input)
 {
     Varyings output;
     UNITY_SETUP_INSTANCE_ID(input)
-    UNITY_TRANSFER_INSTANCE_ID(input,output)
+    UNITY_TRANSFER_INSTANCE_ID(input,output);
     float4 baseST=UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseMap_ST);
     output.baseUV=input.baseUV*baseST.xy+baseST.zw;
     output.positionWS=TransformObjectToWorld(input.positionOS);
@@ -72,19 +72,6 @@ float4 LitPassFragment(Varyings input):SV_TARGET
     #else
         BRDF brdf=GetBRDF(surface);
     #endif
-    ShadowData shadowData=GetShadowData(surface);
-    DirectionalShadowData dirShadowData = GetDirectionalShadowData(0,shadowData);
-    float4 positionSTS = mul(
-		_DirectionalShadowMatrices[dirShadowData.tileIndex],
-		float4(surface.position, 1.0)
-	);
-	positionSTS.xyz/=positionSTS.w;
-	float shadow = SampleDirectionalShadowAtlas(positionSTS.xyz);
-    return shadow;
-    // return float4(positionSTS.xy,0.0,1.0);
-    // return float4((1-shadow).xxx,1.0);
-    return (1-positionSTS.z);
-    return (positionSTS.z+1)*0.5>shadow?0.0:1.0;
 	return float4(GetMainDiffuse(surface,brdf), surface.alpha);
 }
 #endif

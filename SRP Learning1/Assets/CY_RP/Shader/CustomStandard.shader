@@ -35,6 +35,7 @@
             ENDHLSL
         }
         Pass{
+            //URP自带ShadowCaster标签，在渲染其他对象前渲染深度图
             Tags {
 				"LightMode" = "ShadowCaster"
 			}

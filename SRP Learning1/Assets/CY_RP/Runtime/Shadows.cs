@@ -24,6 +24,7 @@ namespace CY.Rendering
             cascadeCountId = Shader.PropertyToID("_CascadeCount"),
             cascadeCullingSpheresId = Shader.PropertyToID("_CascadeCullingSpheres"),
             shadowDistanceFadeId = Shader.PropertyToID("_ShadowDistanceFade");
+        static public Vector4[] cascadeSpheres => cascadeCullingSpheres;
         static Vector4[] cascadeCullingSpheres = new Vector4[maxCascades];
         static Matrix4x4[] dirShadowMatrices = new Matrix4x4[maxShadowDirectionalLightCount * maxCascades];
         const string bufferName = "Shadows";
@@ -33,7 +34,7 @@ namespace CY.Rendering
         {
             public int visibleLightIndex;
         }
-        ShadowDirectionalLight[] shadowDirectionalLights = new ShadowDirectionalLight[maxShadowDirectionalLightCount * maxCascades];
+        ShadowDirectionalLight[] shadowDirectionalLights = new ShadowDirectionalLight[maxShadowDirectionalLightCount];
 
         CommandBuffer buffer = new CommandBuffer
         {
@@ -50,14 +51,14 @@ namespace CY.Rendering
             int atlasSize = (int)shadowParams.settings.directional.atlasSize;
             //申请渲染纹理缓冲
             buffer.GetTemporaryRT(dirShadowAtlasId, atlasSize, atlasSize, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
-            //设置相机渲染目标
+            //设置_DirectionalShadowAtlas纹理为相机渲染目标
             buffer.SetRenderTarget(dirShadowAtlasId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            //此时相机渲染的或许使shadowmap，为保证后续渲染真实的世界需要clear depth buffer,但是color缓冲会被后续的渲染清空，所以此处不必清空
+            //此时相机渲染的或许是shadowmap，为保证后续渲染真实的世界需要clear depth buffer,但是color缓冲会被后续的渲染清空，所以此处不必清空
             buffer.ClearRenderTarget(true, false, Color.clear);
             buffer.BeginSample(bufferName);
             ExecuteBuffer();
             int tiles = ShadowDirectionalLightCount * shadowParams.settings.directional.cascadeCount;
-            int split = tiles <= 1 ? 1 : tiles <= 4 ? 2 : 4;
+            int split = tiles <= 1 ? 1 : tiles <= 4 ? 2 : 4;//在x，y方向各切分了split个块
             int tileSize = atlasSize / split;
             for (int i = 0; i < ShadowDirectionalLightCount; ++i)
             {
@@ -114,15 +115,19 @@ namespace CY.Rendering
                 shadowSettings.splitData = splitData;
                 if (index == 0)
                 {
+                    //cullingSphere是以摄像机位置为球心的
                     Vector4 cullingSphere = splitData.cullingSphere;
                     cullingSphere.w *= cullingSphere.w;
                     cascadeCullingSpheres[i] = cullingSphere;
                 }
                 int tileIndex = tileOffset + i;
                 dirShadowMatrices[tileIndex] = ConvertToAtlasMatrix(projectionMatrix * viewMatrix, SetTileViewPort(tileIndex, split, tileSize), split);
+                //绘制指定区域的
                 buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
+                buffer.SetGlobalDepthBias(50000f, 0f);
                 ExecuteBuffer();
                 GlobalUniqueParamsForRP.context.DrawShadows(ref shadowSettings);
+                buffer.SetGlobalDepthBias(0f, 0f);
             }
         }
         Vector2 SetTileViewPort(int index, int split, float tileSize)
